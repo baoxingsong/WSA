@@ -105,10 +105,14 @@ void charByCharCategoryRead( const std::string& filePath, std::map<std::string, 
             }
             thisId=0;
         }else{
-            std::stringstream geek(line);
-            geek >> thisCategory;
-            weight[name][thisId] = thisCategory;
-            ++thisId;
+            std::stringstream ss(line);
+            std::string item;
+            while (std::getline(ss, item, '\t')) {
+                if (item.length() > 0) {
+                    weight[name][thisId] = std::stoi(item);
+                    ++thisId;
+                }
+            }
         }
     }
 }

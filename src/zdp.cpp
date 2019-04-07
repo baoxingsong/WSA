@@ -34,7 +34,7 @@
 
 
 void zdp(const char * seqAChar, const char * seqBChar, const int32_t & lengthA, const int32_t & lengthB, const int16_t * category, std::stack<char> & A, Score & score){
-    std::cout << "lengthA " << lengthA << " lengthB " << lengthB << std::endl;
+    //std::cout << "lengthA " << lengthA << " lengthB " << lengthB << std::endl;
     if( lengthA==0 || 0==lengthB ){
         int32_t i = lengthB;
         int32_t j = lengthA;

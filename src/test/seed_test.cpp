@@ -33,8 +33,8 @@ TEST(seed, c1){
     // in a 8 match alignment there could be one indel in the middle, so we set initialSeedLength as 7
     // in a 7 bp alignment only one mismatch is possiable
 
-    int lengthWantTouse=100000;
-    int16_t category[100000] ={ 0 };
+    int lengthWantTouse=10000;
+    int16_t category[10000] ={ 0 };
     int8_t initialSeedLength=7;
     int8_t initialSeedsScoreThreadsHold=6;
 
@@ -48,7 +48,19 @@ TEST(seed, c1){
 
     ASSERT_EQ(0, 0);
 }
-
+TEST(sore, c1){
+    Score score("/Users/bs674/scoreMatrix");
+    std::vector<int16_t> cs;
+    cs.push_back(0);
+    cs.push_back(1);
+    cs.push_back(10);
+    cs.push_back(70);
+    cs.push_back(85);
+    cs.push_back(100);
+    for( int16_t  c : cs ){
+        std::cout << score.getScore(c, 'A', 'A') << " " << score.getScore(c, 'A', 'C') << " " << score.getOpenPenalty(c) << " " << score.getExtendPenalty(c) << std::endl;
+    }
+}
 TEST(gffToCategory, c1){
     std::map<std::string, std::string> b73;
     readFastaFile( "/Users/bs674/Zea_mays.B73_RefGen_v4.dna.toplevel.fa",  b73);
@@ -56,7 +68,6 @@ TEST(gffToCategory, c1){
     for( std::map<std::string, std::string>::iterator it=b73.begin(); it != b73.end(); ++it){
         chrSize[it->first] = it->second.size();
     }
-
     std::string gffFile = "/Users/bs674/Zea_mays.B73_RefGen_v4.42.gff3";
     std::string outputFile = "/Users/bs674/category";
     readGffFileWithEveryThing (gffFile,  chrSize, outputFile);
@@ -64,21 +75,26 @@ TEST(gffToCategory, c1){
 
 TEST(seed, c2){
     std::map<std::string, std::string> b73;
-    readFastaFile( "/Users/bs674/b73.fa",  b73);
+    //readFastaFile( "/Users/bs674/Zea_mays.B73_RefGen_v4.dna.toplevel.fa",  b73);
+    readFastaFile( "/Users/bs674/Zea_mays.AGPv3.31.dna.genome.fa",  b73);
 
     std::map<std::string, std::string> mo17;
     readFastaFile( "/Users/bs674/Mo17.fa",  mo17);
-
+    std::map<std::string, int32_t>  chrSize;
+    for( std::map<std::string, std::string>::iterator it = b73.begin(); it!=b73.end(); ++it ){
+        chrSize[it->first] = it->second.size();
+    }
     std::map<std::string, int16_t *> weight;
-    charByCharCategoryRead( "/Users/bs674/category", mo17,  weight );
-
-    int lengthWantTouse=100000;
+    //readGffFileWithEveryThing ( "/Users/bs674/Zea_mays.B73_RefGen_v4.42.gff3",  chrSize, weight);
+    readGffFileWithEveryThing ( "/Users/bs674/Zea_mays.AGPv3.31.gff3",  chrSize, weight);
+    int lengthWantTouse=200000;
 
     int8_t initialSeedLength=7;
     int8_t initialSeedsScoreThreadsHold=6;
 
     Score score("/Users/bs674/scoreMatrix");
-    seq2seed ( b73["1"].substr(0, lengthWantTouse),  mo17["1"].substr(0, lengthWantTouse), weight[0], initialSeedLength, initialSeedsScoreThreadsHold, 12, score);
+    std::cout << "start alignment" << std::endl;
+    seq2seed ( b73["1"].substr(4000, lengthWantTouse),  mo17["1"].substr(624000, lengthWantTouse), weight["1"], initialSeedLength, initialSeedsScoreThreadsHold, 12, score);
 
     for( std::map<std::string, int16_t *>::iterator it=weight.begin(); it != weight.end(); ++it ){
         delete[] it->second;

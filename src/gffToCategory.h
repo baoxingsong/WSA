@@ -16,5 +16,5 @@
 
 
 void readGffFileWithEveryThing (const std::string& filePath, std::map<std::string, int32_t> & chrSize, const std::string & outputFile);
-
+void readGffFileWithEveryThing (const std::string& filePath, std::map<std::string, int32_t> & chrSize, std::map<std::string, int16_t *> & categories);
 #endif //WSA_GFFTOCATEGORY_H

@@ -46,7 +46,7 @@ void removeDuplications( std::map<std::string, std::vector<element>> & elements0
     }
 }
 
-void updateWeight( std::map<std::string, std::vector<element> > & elements, std::map<std::string, std::vector<int16_t>> & categories, const int16_t & score){
+void updateWeight( std::map<std::string, std::vector<element> > & elements, std::map<std::string, int16_t *> & categories, const int16_t & score){
     int i, j;
     for( std::map<std::string, std::vector<element>>::iterator it = elements.begin(); it != elements.end(); ++it ){
         for( i=0; i<it->second.size(); ++i ){
@@ -58,14 +58,46 @@ void updateWeight( std::map<std::string, std::vector<element> > & elements, std:
 }
 
 void readGffFileWithEveryThing (const std::string& filePath, std::map<std::string, int32_t> & chrSize, const std::string & outputFile){
-    std::map<std::string, std::vector<int16_t>> categories;
+    std::map<std::string, int16_t *> categories;
+    readGffFileWithEveryThing (filePath,  chrSize, categories);
+
+    std::ofstream ofile;
+    ofile.open(outputFile);
+    int elementIndex;
+    for( std::map<std::string, int32_t>::iterator  it = chrSize.begin(); it != chrSize.end(); ++it ){
+        ofile << ">" << it->first << "\n";
+        elementIndex = 0;
+        for( int16_t i=0; i<it->second; ++i ){
+            ++elementIndex;
+            if( 0 == elementIndex%1000 ){
+                ofile << i << "\n";
+            }else{
+                ofile << i << "\t";
+            }
+        }
+    }
+    ofile.close();
+    for( std::map<std::string, int16_t *>::iterator it=categories.begin(); it != categories.end(); ++it ){
+        delete[] it->second;
+    }
+}
+
+
+
+void readGffFileWithEveryThing (const std::string& filePath, std::map<std::string, int32_t> & chrSize, std::map<std::string, int16_t *> & categories){
+
     std::map<std::string, std::vector <element>> introns0; // gene, transcript protein, intron
     std::map<std::string, std::vector <element>> exons0;
     std::map<std::string, std::vector <element>> cds0;
     std::map<std::string, std::vector <element>> transposons0;
 
+    int32_t i;
+
     for( std::map<std::string, int32_t>::iterator it = chrSize.begin(); it!=chrSize.end(); ++it ){
-        categories[it->first] = std::vector<int16_t>(it->second, 10); //10 is the weight of intergenetic
+        categories[it->first] =  new int16_t[it->second]; //(, 10); //10 is the weight of intergenetic
+        for( i=0; i < it->second; ++i ){
+            categories[it->first][i] = 10;
+        }
         introns0[it->first]=std::vector <element>();
         exons0[it->first]=std::vector <element>();
         cds0[it->first]=std::vector <element>();
@@ -112,9 +144,11 @@ void readGffFileWithEveryThing (const std::string& filePath, std::map<std::strin
     transposableNickNames.insert("transposable_element");
     transposableNickNames.insert("transposon_fragment");
 
+
     std::set<std::string> ignoreTypes;
     ignoreTypes.insert("chromosome");
     ignoreTypes.insert("contig");
+    ignoreTypes.insert("repeat_region");
 
 
     std::ifstream infile(filePath);
@@ -191,14 +225,4 @@ void readGffFileWithEveryThing (const std::string& filePath, std::map<std::strin
     updateWeight( transposons0, categories,1);
     my_time = time(NULL); printf("%s", ctime(&my_time));
     std::cout << "update weigth transposons done" << std::endl;
-
-    std::ofstream ofile;
-    ofile.open(outputFile);
-    for( std::map<std::string, std::vector<int16_t>>::iterator  it = categories.begin(); it != categories.end(); ++it ){
-        ofile << ">" << it->first << "\n";
-        for( int16_t i : it->second ){
-            ofile << i << "\n";
-        }
-    }
-    ofile.close();
 }

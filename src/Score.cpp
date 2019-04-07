@@ -79,7 +79,7 @@ Score::Score(const std::string & folder){
                 }
                 ++lineindex;
             }
-            infile.close();
+            infile2.close();
         }
     }
     infile.close();

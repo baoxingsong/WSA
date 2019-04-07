@@ -135,7 +135,7 @@ void megerSeedDeletion ( const int & seedScore1, const int & seedScore2, const i
 // only apply this function on seed without indel
 void removeExtendSeedsDuplications(std::vector<MergedSeed> & allExtendSeeds){
     std::sort(allExtendSeeds.begin(), allExtendSeeds.end(), [](MergedSeed a, MergedSeed b) {
-        return a.positionAStart < b.positionAStart;
+        if(a.positionAStart == b.positionAStart){ return a.positionBStart < b.positionBStart; }else{return a.positionAStart < b.positionAStart;}
     });
     int i, j;
     for ( i=0, j=0; i< allExtendSeeds.size(); ++i ){
@@ -157,7 +157,7 @@ void removeExtendSeedsDuplications(std::vector<MergedSeed> & allExtendSeeds){
 //o2
 void longestPath_V1 (std::vector<MergedSeed> & allMergedSeeds, std::vector<MergedSeed> & chain){
     std::sort(allMergedSeeds.begin(), allMergedSeeds.end(), [](MergedSeed a, MergedSeed b) {
-        return a.positionAStart < b.positionAStart;
+        if(a.positionAStart == b.positionAStart){ return a.positionBStart < b.positionBStart; }else{return a.positionAStart < b.positionAStart;}
     });
     std::cout << "begin to chain" << std::endl;
     int64_t maxSore = 0;
@@ -194,7 +194,6 @@ void longestPath_V1 (std::vector<MergedSeed> & allMergedSeeds, std::vector<Merge
             maxSore = scoreArray[idx];
         }
     }
-    std::cout << "line 378" << std::endl;
     int idx=bestEnd; // bestEnd is where to stop the longest path
     chain.push_back(allMergedSeeds[idx]);
     int jdx = prev[idx]; // prev[] is index on the longest path
@@ -207,13 +206,13 @@ void longestPath_V1 (std::vector<MergedSeed> & allMergedSeeds, std::vector<Merge
 
 
 void longestPath (std::vector<MergedSeed> & allMergedSeeds, std::vector<MergedSeed> & chain){
+    // there is problem with the idea behind this function
+    // since the Bstart and Bend could not be well orginazed ofr the used set
     std::sort(allMergedSeeds.begin(), allMergedSeeds.end(), [](MergedSeed a, MergedSeed b) {
-        return a.positionAStart < b.positionAStart;
+        if(a.positionAStart == b.positionAStart){ return a.positionBStart < b.positionBStart; }else{return a.positionAStart < b.positionAStart;}
     });
-    std::cout << "begin to chain" << std::endl;
     int64_t maxSore = 0;
     int32_t bestEnd = 0;
-//    std::cout << allMergedSeeds[0].score << " " << allMergedSeeds[0].positionAStart << " " << allMergedSeeds[0].positionAEnd << " " << allMergedSeeds[0].positionBStart << " " << allMergedSeeds[0].positionBEnd << std::endl;
     std::vector<int64_t> scoreArray (allMergedSeeds.size()); // arrays of scores
     std::vector<int32_t> prev (allMergedSeeds.size());  // index of previous node in longest path
     scoreArray[0] = allMergedSeeds[0].score;
@@ -230,22 +229,17 @@ void longestPath (std::vector<MergedSeed> & allMergedSeeds, std::vector<MergedSe
         scoreArray[idx] = allMergedSeeds[idx].score;
         prev[idx] = -1;
         toRemoveFromUsed = -1;
-        for (int32_t jdx : used) {// checking all previous nodes
-            // Because we swapped asm/query start position so that inversions were all increasing,
-            // we should always be on the diagonal.  If not, then we filter it.
-            // This gets rid of the noise, while preserving the inversions on
-            // the diagonal
-            // Are only looking at positions previous to our current "idx" position
+        for (int32_t jdx : used) {
             if (allMergedSeeds[jdx].positionAEnd < allMergedSeeds[idx].positionAStart &&
                 allMergedSeeds[jdx].positionBEnd < allMergedSeeds[idx].positionBStart) {
                 if ((scoreArray[jdx] + allMergedSeeds[idx].score) > scoreArray[idx]) {
                     scoreArray[idx] = scoreArray[jdx] + allMergedSeeds[idx].score;
                     prev[idx] = jdx;
-                    toRemoveFromUsed = jdx;
+                    toRemoveFromUsed = prev[jdx];
                 }
             }
         }
-        if( toRemoveFromUsed != -1 ){
+        if( toRemoveFromUsed > -1 ){
             used.erase(toRemoveFromUsed);
         }
         used.insert(idx);
@@ -254,7 +248,7 @@ void longestPath (std::vector<MergedSeed> & allMergedSeeds, std::vector<MergedSe
             maxSore = scoreArray[idx];
         }
     }
-    std::cout << "line 378" << std::endl;
+
     int idx=bestEnd; // bestEnd is where to stop the longest path
     chain.push_back(allMergedSeeds[idx]);
     int jdx = prev[idx]; // prev[] is index on the longest path
@@ -299,6 +293,7 @@ void outputAlignment( const char * a, const char * b, const int & startA, const 
 
 void seq2seed ( const std::string & seqA, const std::string & seqB, const int16_t * category, const int8_t & initialSeedLength, const int8_t & initialSeedsScoreThreadsHold, int8_t miniseedLength, Score & score){
     miniseedLength--;
+    std::cout << seqA << std::endl << seqB << std::endl;
 
     int32_t lengthSeqA = seqA.size();
     int32_t lengthSeqB = seqB.size();
@@ -322,13 +317,26 @@ void seq2seed ( const std::string & seqA, const std::string & seqB, const int16_
         }
     }
     std::cout << "Initial Seeds " << allExtendSeeds.size() << std::endl;
+    /*i=1;
+    std::cout << "line 326 " << allExtendSeeds[i].positionAStart << " " << allExtendSeeds[i].positionBStart <<
+              " " << allExtendSeeds[i].positionAEnd << " " << allExtendSeeds[i].positionBEnd << " " << " " << allExtendSeeds[i].score
+              << " " << allExtendSeeds[i].length << std::endl << allExtendSeeds[i].align << std::endl;
+    outputAlignment(seqAChar, seqBChar, allExtendSeeds[i].positionAStart, allExtendSeeds[i].positionBStart, allExtendSeeds[i].align);
+*/
+
 
     removeExtendSeedsDuplications(allExtendSeeds); // remove duplication records
     std::cout << "forward extend of seeds remove duplication " << allExtendSeeds.size() << std::endl;
-
-    // update seed score according to their category end
+    /*i=1;
+    std::cout << "line 336 " << allExtendSeeds[i].positionAStart << " " << allExtendSeeds[i].positionBStart <<
+              " " << allExtendSeeds[i].positionAEnd << " " << allExtendSeeds[i].positionBEnd << " " << " " << allExtendSeeds[i].score
+              << " " << allExtendSeeds[i].length << std::endl << allExtendSeeds[i].align << std::endl;
+    outputAlignment(seqAChar, seqBChar, allExtendSeeds[i].positionAStart, allExtendSeeds[i].positionBStart, allExtendSeeds[i].align);
+*/
+    // update seed score according to their category
+    int64_t newScore;
     for( i=0; i<allExtendSeeds.size(); ++i ){
-        int64_t newScore=0;
+        newScore=0;
         for( j=0; j< allExtendSeeds[i].length; ++j){
             newScore += score.getScore( *(category+j+allExtendSeeds[i].positionAStart), *(seqAChar+j+allExtendSeeds[i].positionAStart), *(seqBChar+j+allExtendSeeds[i].positionBStart) ); // the category share the same coordinate with reference sequence
         }
@@ -336,6 +344,13 @@ void seq2seed ( const std::string & seqA, const std::string & seqB, const int16_
     }
     time_t my_time = time(NULL); printf("%s", ctime(&my_time));
     std::cout << "update seed score according to their category " << allExtendSeeds.size() << std::endl;
+    /*
+     * i=1;
+    std::cout << "line 340 " << allExtendSeeds[i].positionAStart << " " << allExtendSeeds[i].positionBStart <<
+              " " << allExtendSeeds[i].positionAEnd << " " << allExtendSeeds[i].positionBEnd << " " << " " << allExtendSeeds[i].score
+              << " " << allExtendSeeds[i].length << std::endl << allExtendSeeds[i].align << std::endl;
+    outputAlignment(seqAChar, seqBChar, allExtendSeeds[i].positionAStart, allExtendSeeds[i].positionBStart, allExtendSeeds[i].align);
+*/
 
     // the following code could be dangerous, should be really careful
     // since there are INDELs, so should not remove duplication by comparing the start and end position without consider the alignment
@@ -351,7 +366,14 @@ void seq2seed ( const std::string & seqA, const std::string & seqB, const int16_
         if(a.positionAStart == b.positionAStart){ return a.positionBStart < b.positionBStart; }else{return a.positionAStart < b.positionAStart;}
     });
     my_time = time(NULL); printf("%s", ctime(&my_time));
-    std::cout << "extend transformed to megered seeds" << std::endl;
+    std::cout << "extend transformed to megered seeds " << allExtendSeeds.size() << std::endl;
+    /*
+    i=1;
+    std::cout << "line 362 " << allExtendSeeds[i].positionAStart << " " << allExtendSeeds[i].positionBStart <<
+              " " << allExtendSeeds[i].positionAEnd << " " << allExtendSeeds[i].positionBEnd << " " << " " << allExtendSeeds[i].score
+              << std::endl << allExtendSeeds[i].align << std::endl;
+    outputAlignment(seqAChar, seqBChar, allExtendSeeds[i].positionAStart, allExtendSeeds[i].positionBStart, allExtendSeeds[i].align);
+*/
 
     // prepare special data structure for seeding up purpose
     std::vector<std::vector<MergedSeed *>> referencePositionAsIndex(lengthSeqA+1); // plus for end based entry
@@ -390,7 +412,6 @@ void seq2seed ( const std::string & seqA, const std::string & seqB, const int16_
         }
     }
     referencePositionAsIndex.clear();
-    std::cout << "referencePositionAsIndex done begin to shrink allMergedSeeds" << std::endl;
     for( i=j=0; i<allExtendSeeds.size(); ++i ){
         if( !allExtendSeeds[i].everUsed ){ // should be kept
             if( i != j ){
@@ -399,6 +420,7 @@ void seq2seed ( const std::string & seqA, const std::string & seqB, const int16_
             ++j;
         }
     }
+    std::cout << "referencePositionAsIndex shrink allMergedSeeds " << allExtendSeeds.size() << std::endl;
     allMergedSeedsSize=allExtendSeeds.size();
     std::vector<std::vector<MergedSeed *>> queryPositionAsIndex(lengthSeqB+1);
     for( i=0; i<allMergedSeedsSize; ++i ){
@@ -431,7 +453,7 @@ void seq2seed ( const std::string & seqA, const std::string & seqB, const int16_
         }
     }
     queryPositionAsIndex.clear();
-    std::cout << "begin to shrink allMergedSeeds" << std::endl;
+    std::cout << "begin to shrink allMergedSeeds " << allExtendSeeds.size() << std::endl;
     for( i=j=0; i<allExtendSeeds.size(); ++i ){
         if( !allExtendSeeds[i].everUsed && (allExtendSeeds[i].align.size())>=miniseedLength  ){
             if( i != j ){
@@ -444,18 +466,33 @@ void seq2seed ( const std::string & seqA, const std::string & seqB, const int16_
     my_time = time(NULL); printf("%s", ctime(&my_time));
 
     std::cout << "before chain allMergedSeeds size " << allExtendSeeds.size() << std::endl;
+    std::ofstream ofile;
+    ofile.open("/Users/bs674/WSA_Alignment");
+
+    for( i=0; i<allExtendSeeds.size(); ++i ) {
+        ofile << allExtendSeeds[i].positionAStart << " " << allExtendSeeds[i].positionBStart <<
+                  " " << allExtendSeeds[i].positionAEnd << " " << allExtendSeeds[i].positionBEnd << " " << " " << allExtendSeeds[i].score<<
+                  allExtendSeeds[i].align << std::endl;
+        //outputAlignment(seqAChar, seqBChar, allExtendSeeds[i].positionAStart, allExtendSeeds[i].positionBStart, allExtendSeeds[i].align);
+    }
+
     std::vector<MergedSeed> chain;
-    longestPath ( allExtendSeeds, chain );
+    longestPath_V1 ( allExtendSeeds, chain );
     allExtendSeeds.clear();
     my_time = time(NULL); printf("%s", ctime(&my_time));
-    std::cout << "final chain" << std::endl;
+    std::cout << "final chain " << chain.size() << std::endl;
 
     int32_t AStart = 0;
     int32_t BStart = 0;
 
+
     std::stringstream alignStream;
     std::stack<char> A;
     for( i=0; i<chain.size(); ++i ){
+//        std::cout << chain[i].positionAStart << " " << chain[i].positionBStart <<
+//                  " " << chain[i].positionAEnd << " " << chain[i].positionBEnd << " " << " " << chain[i].score << std::endl << chain[i].align << std::endl;
+//        outputAlignment(seqAChar, seqBChar, chain[i].positionAStart, chain[i].positionBStart, chain[i].align);
+
         zdp(seqAChar+AStart, seqBChar+BStart, chain[i].positionAStart-AStart, chain[i].positionBStart-BStart, category+AStart, A, score);
         while (!A.empty()) {
             alignStream << A.top();
@@ -464,9 +501,6 @@ void seq2seed ( const std::string & seqA, const std::string & seqB, const int16_
         alignStream << chain[i].align;
         AStart = chain[i].positionAEnd+1;
         BStart = chain[i].positionBEnd+1;
-//        std::cout << chain[i].positionAStart << " " << chain[i].positionBStart <<
-//                  " " << chain[i].positionAEnd << " " << chain[i].positionBEnd << " " << chain[i].align << " " << chain[i].score << std::endl;
-//        outputAlignment(seqAChar, seqBChar, chain[i].positionAStart, chain[i].positionBStart, chain[i].align);
     }
     std::cout << "after chain" << std::endl;
     zdp(seqAChar+AStart, seqBChar+BStart, lengthSeqA-AStart, lengthSeqB-BStart, category+AStart, A, score);
@@ -478,25 +512,55 @@ void seq2seed ( const std::string & seqA, const std::string & seqB, const int16_
     std::string thisAlign = alignStream.str();
     std::string aa;
     std::string ab;
+    std::string cc;
     int ai=0;
     int bi=0;
     for (  i=0; i<thisAlign.size(); ++i ){
         if( thisAlign[i] == 'M' ){
             aa += seqA[ai];
             ab += seqB[bi];
+            int16_t printableScore = category[ai]/10-1;
+            cc += std::to_string(printableScore);
             ++ai;
             ++bi;
         }else if( thisAlign[i] == 'D' ){
             aa += seqA[ai];
             ab += '-';
+            int16_t printableScore = category[ai]/10-1;
+            cc += std::to_string(printableScore);
             ++ai;
         }else if( thisAlign[i] == 'I' ){
             aa += '-';
             ab += seqB[bi];
+            cc += '-';
             ++bi;
         }
     }
-    std::cout << seqA << std::endl << seqB << std::endl << aa << std::endl << thisAlign << std::endl << ab << std::endl;
+
+    std::size_t pos = 0;
+    int16_t linewidth = 180;
+    int32_t currentALength = 0;
+    int32_t currentBLength = 0;
+    while (pos < aa.length()) {
+        std::string t1 = aa.substr(pos, linewidth);
+        std::string t2 = ab.substr(pos, linewidth);
+        for( i=0; i<t1.size(); ++i ){
+            if( t1[i] != '-' ){
+                ++currentALength;
+            }
+            if( t2[i] != '-' ){
+                ++currentBLength;
+            }
+        }
+
+        ofile << aa.substr(pos, linewidth) << " " << currentALength << std::endl;
+        ofile << thisAlign.substr(pos, linewidth) << std::endl;
+        ofile << ab.substr(pos, linewidth) << " " << currentBLength << std::endl;
+        ofile << cc.substr(pos, linewidth) << std::endl << std::endl << std::endl << std::endl;
+        pos += linewidth;
+    }
+
+//    std::cout << aa << std::endl << thisAlign << std::endl << ab << std::endl << cc << std::endl;
     my_time = time(NULL); printf("%s", ctime(&my_time));
     std::cout << std::endl;
 }
