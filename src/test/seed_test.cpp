@@ -39,8 +39,10 @@ TEST(seed, c1){
     int8_t initialSeedsScoreThreadsHold=6;
 
     Score score("/Users/bs674/scoreMatrix");
-    seq2seed ( b73["1"].substr(0, lengthWantTouse),  mo17["1"].substr(0, lengthWantTouse), category, initialSeedLength, initialSeedsScoreThreadsHold, 12, score);
-
+    std::string outputFile="/Users/bs674/WSA_align_seed_c1";
+    int64_t numberOfSeedsForChain = 10000;
+    seq2seed ( b73["1"].substr(0, lengthWantTouse),  mo17["1"].substr(0, lengthWantTouse), category, initialSeedLength,
+            initialSeedsScoreThreadsHold, outputFile, 12, score, numberOfSeedsForChain);
 
 //    const char * seqAChar = seqA.c_str();
 //    const char * seqBChar = seqB.c_str();
@@ -87,14 +89,17 @@ TEST(seed, c2){
     std::map<std::string, int16_t *> weight;
     //readGffFileWithEveryThing ( "/Users/bs674/Zea_mays.B73_RefGen_v4.42.gff3",  chrSize, weight);
     readGffFileWithEveryThing ( "/Users/bs674/Zea_mays.AGPv3.31.gff3",  chrSize, weight);
-    int lengthWantTouse=200000;
+    int lengthWantTouse=100000;
 
     int8_t initialSeedLength=7;
     int8_t initialSeedsScoreThreadsHold=6;
 
     Score score("/Users/bs674/scoreMatrix");
     std::cout << "start alignment" << std::endl;
-    seq2seed ( b73["1"].substr(4000, lengthWantTouse),  mo17["1"].substr(624000, lengthWantTouse), weight["1"], initialSeedLength, initialSeedsScoreThreadsHold, 12, score);
+    std::string outputFile="/Users/bs674/WSA_align_seed_c3";
+    int64_t numberOfSeedsForChain = 0;
+    seq2seed ( b73["1"].substr(4000, lengthWantTouse),  mo17["1"].substr(624000, lengthWantTouse), weight["1"]+4000,
+            initialSeedLength, initialSeedsScoreThreadsHold, outputFile, 12, score, numberOfSeedsForChain);
 
     for( std::map<std::string, int16_t *>::iterator it=weight.begin(); it != weight.end(); ++it ){
         delete[] it->second;

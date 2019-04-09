@@ -5,6 +5,7 @@
 #include <cstdint>
 #include "seed.h"
 
+/*
 struct InitialSeed {
     int32_t positionAStart;
     int32_t positionBStart;
@@ -156,7 +157,7 @@ void megerSeed ( const int & seedScore1, const int & seedScore2, const int32_t &
                 extendGapPenalty=score.getExtendPenalty(*(category+position1AEnd));
             }
 
-            int32_t thisScore = seedScore1 + seedScore2 - openGapPenalty/*open gap penalty*/ - (position2BStart-(position1BEnd+1))*extendGapPenalty/*extend gap penalty*/;  // assume we have a seed 010-010 the first seed score is 2 and the second seed score is 2 and the merged seed score is 2 (0 means match, 1 means mis-match and - means indel)
+            int32_t thisScore = seedScore1 + seedScore2 - openGapPenalty - (position2BStart-(position1BEnd+1))*extendGapPenalty; //extend gap penalty  // assume we have a seed 010-010 the first seed score is 2 and the second seed score is 2 and the merged seed score is 2 (0 means match, 1 means mis-match and - means indel)
             //int32_t thisScore = seedScore1 + seedScore2 - position2BStart + position1BEnd;
             if ( thisScore >= seedScore1 && thisScore >= seedScore2 ){
                 megerScore = thisScore;
@@ -194,7 +195,7 @@ void megerSeed ( const int & seedScore1, const int & seedScore2, const int32_t &
             extendGapPenalty=score.getExtendPenalty(*(category+position1AEnd));
         }
 
-        int32_t thisScore = seedScore1 + seedScore2 - openGapPenalty/*open gap penalty*/ - (position2BStart-(position1BEnd+1))*extendGapPenalty/*extend gap penalty*/;  // assume we have a seed 010-010 the first seed score is 2 and the second seed score is 2 and the merged seed score is 2 (0 means match, 1 means mis-match and - means indel)
+        int32_t thisScore = seedScore1 + seedScore2 - openGapPenalty - (position2BStart-(position1BEnd+1))*extendGapPenalty;  // extend gap penalty assume we have a seed 010-010 the first seed score is 2 and the second seed score is 2 and the merged seed score is 2 (0 means match, 1 means mis-match and - means indel)
         //int32_t thisScore = seedScore1 + seedScore2 - position2BStart + position1BEnd;
         if ( thisScore >= seedScore1 && thisScore >= seedScore2 ){
             newScore = thisScore;
@@ -532,3 +533,5 @@ void seq2seed ( const std::string & seqA, const std::string & seqB, const int16_
         outputAlignment(seqAChar, seqBChar, chain[i].positionAStart, chain[i].positionBStart, chain[i].align);
     }
 }
+*/
+s

@@ -171,7 +171,6 @@ void zdp(const char * seqAChar, const char * seqBChar, const int32_t & lengthA, 
         }
     }
 
-
     for (i = 0; i <= lengthB; i++) {
         delete[] _similarity_matrix[i];
         delete[] _track_matrix[i];

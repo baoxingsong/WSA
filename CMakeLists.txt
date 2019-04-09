@@ -16,6 +16,6 @@ add_executable(wsa main.cpp
         src/seed.cpp src/seed.h
         src/fasta.cpp src/fasta.h
         src/test/seed_test.cpp
-        src/zdp.cpp src/zdp.h src/Score.cpp src/Score.h src/gffToCategory.cpp src/gffToCategory.h)
+        src/zdp.cpp src/zdp.h src/Score.cpp src/Score.h src/gffToCategory.cpp src/gffToCategory.h src/SuffixTree.cpp src/SuffixTree.h src/test/suffixTree_test.cpp)
 
 target_link_libraries(wsa gtest gtest_main)
