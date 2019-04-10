@@ -35,13 +35,13 @@ TEST(seed, c1){
 
     int lengthWantTouse=10000;
     int16_t category[10000] ={ 0 };
-    int8_t initialSeedLength=7;
-    int8_t initialSeedsScoreThreadsHold=6;
+    int16_t initialSeedLength=7;
+    int16_t initialSeedsScoreThreadsHold=6;
 
     Score score("/Users/bs674/scoreMatrix");
     std::string outputFile="/Users/bs674/WSA_align_seed_c1";
     int64_t numberOfSeedsForChain = 10000;
-    seq2seed ( b73["1"].substr(0, lengthWantTouse),  mo17["1"].substr(0, lengthWantTouse), category, initialSeedLength,
+    seq2seed ( b73["1"].substr(0, lengthWantTouse).c_str(),  mo17["1"].substr(0, lengthWantTouse).c_str(), lengthWantTouse, lengthWantTouse, category, initialSeedLength,
             initialSeedsScoreThreadsHold, outputFile, 12, score, numberOfSeedsForChain);
 
 //    const char * seqAChar = seqA.c_str();
@@ -98,8 +98,42 @@ TEST(seed, c2){
     std::cout << "start alignment" << std::endl;
     std::string outputFile="/Users/bs674/WSA_align_seed_c3";
     int64_t numberOfSeedsForChain = 0;
-    seq2seed ( b73["1"].substr(4000, lengthWantTouse),  mo17["1"].substr(624000, lengthWantTouse), weight["1"]+4000,
-            initialSeedLength, initialSeedsScoreThreadsHold, outputFile, 12, score, numberOfSeedsForChain);
+    seq2seed ( b73["1"].c_str()+4000,  mo17["1"].c_str()+624000, lengthWantTouse, lengthWantTouse, weight["1"]+4000,
+               initialSeedLength, initialSeedsScoreThreadsHold, outputFile, 50, score, numberOfSeedsForChain);
+
+    for( std::map<std::string, int16_t *>::iterator it=weight.begin(); it != weight.end(); ++it ){
+        delete[] it->second;
+    }
+    ASSERT_EQ(0, 0);
+}
+
+TEST(seed, c3){ // this one does not work so well, since my code could not deal with very long k-mersss
+    std::map<std::string, std::string> b73;
+    //readFastaFile( "/Users/bs674/Zea_mays.B73_RefGen_v4.dna.toplevel.fa",  b73);
+    readFastaFile( "/Users/bs674/Zea_mays.AGPv3.31.dna.genome.fa",  b73);
+
+    std::map<std::string, std::string> mo17;
+    readFastaFile( "/Users/bs674/Mo17.fa",  mo17);
+    std::map<std::string, int32_t>  chrSize;
+    for( std::map<std::string, std::string>::iterator it = b73.begin(); it!=b73.end(); ++it ){
+        chrSize[it->first] = it->second.size();
+    }
+    std::map<std::string, int16_t *> weight;
+    //readGffFileWithEveryThing ( "/Users/bs674/Zea_mays.B73_RefGen_v4.42.gff3",  chrSize, weight);
+    readGffFileWithEveryThing ( "/Users/bs674/Zea_mays.AGPv3.31.gff3",  chrSize, weight);
+    //int lengthWantTouse=300000;
+
+    int8_t initialSeedLength=8;
+    int8_t initialSeedsScoreThreadsHold=8;
+
+    Score score("/Users/bs674/scoreMatrix");
+    std::cout << "start alignment" << std::endl;
+    std::string outputFile="/Users/bs674/WSA_align_seed_c3";
+    int64_t numberOfSeedsForChain = 10000;
+
+    seq2seed ( b73["1"].c_str(),  mo17["1"].c_str(),
+               b73["1"].size(), mo17["1"].size(), weight["1"],
+            initialSeedLength, initialSeedsScoreThreadsHold, outputFile, 2000, score, numberOfSeedsForChain);
 
     for( std::map<std::string, int16_t *>::iterator it=weight.begin(); it != weight.end(); ++it ){
         delete[] it->second;

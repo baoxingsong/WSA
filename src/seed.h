@@ -12,10 +12,13 @@
 #include <set>
 #include "Score.h"
 #include "zdp.h"
+#include "SuffixTree.h"
 
-void seq2seed ( const std::string & seqA, const std::string & seqB, const int16_t * category,
+
+
+void seq2seed ( const char * seqAChar, const char * seqBChar, const int32_t & lengthSeqA, const int32_t & lengthSeqB, const int16_t * category,
                 const int8_t & initialSeedLength, const int8_t & initialSeedsScoreThreadsHold,
-                const std::string & outputFile, int8_t miniseedLength, Score & score,
+                const std::string & outputFile, int16_t miniseedLength, Score & score,
                 const int64_t & numberOfSeedsForChain);
 
 #endif //WSA_SEED_H
