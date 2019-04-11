@@ -1,6 +1,27 @@
-//
-// Created by Baoxing Song on 2019-04-06.
-//
+/*
+ * =====================================================================================
+ *
+ *       Filename:  gffToCategory.h
+ *
+ *    Description:
+ *
+ *        Version:  1.0
+ *        Created:  06/04/2019 19:38:26
+ *       Revision:  none
+ *       Compiler:  gcc
+ *
+ *         Author:  Baoxing Song, songbaoxing168@163.com
+ *
+ * =====================================================================================
+ */
+
+/*************************************************************************
+generate weigth vector by reading gff file
+
+
+
+ ************************************************************************/
+
 
 #ifndef WSA_GFFTOCATEGORY_H
 #define WSA_GFFTOCATEGORY_H

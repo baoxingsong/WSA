@@ -49,7 +49,7 @@
 //}
 
 
-
+//read score from files
 Score::Score(const std::string & folder){
     std::ifstream infile(folder+"/matrixList");
     if( ! infile.good()){
@@ -86,7 +86,7 @@ Score::Score(const std::string & folder){
 }
 
 
-//this is some pseudo code
+//match and mis-match query function
 int16_t Score::getScore(const int16_t & category, const char & referencer, const char & query) {
     if( referencer==query ){
         return this->matchScores[category];
@@ -94,9 +94,13 @@ int16_t Score::getScore(const int16_t & category, const char & referencer, const
         return this->mismatchScores[category];
     }
 }
+
+// open gap penalty query function
 int16_t Score::getOpenPenalty(const int16_t & category) {
     return this->openPenalties[category];
 }
+
+// extend gap penalty query function
 int16_t Score::getExtendPenalty(const int16_t & category) {
     return this->extendPenalties[category];
 }

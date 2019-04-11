@@ -17,7 +17,8 @@ struct Seed {
 };
 
 //computational complexity should be o1
-void forwardExtendSeed(const char * a, const char * b, const int32_t & sequenceLengthA, const int32_t & sequenceLengthB, const int8_t & seedLength, const int8_t & seedScore, int32_t & extendedSeedLength, int32_t & extendSeedScore){
+// extend to the down stream direction by checking the exact match between the reference and query
+void extendSeed(const char * a, const char * b, const int32_t & sequenceLengthA, const int32_t & sequenceLengthB, const int8_t & seedLength, const int8_t & seedScore, int32_t & extendedSeedLength, int32_t & extendSeedScore){
     extendedSeedLength = seedLength;
     extendSeedScore = seedScore;
     for ( int32_t i=seedLength; i < sequenceLengthA && i < sequenceLengthB; ++i ) {
@@ -30,20 +31,21 @@ void forwardExtendSeed(const char * a, const char * b, const int32_t & sequenceL
     }
 }
 
+// merger neighbour seed by creat insertion records
 void megerSeedInsertion ( const int & seedScore1, const int & seedScore2, const int32_t & position1AEnd,
                  const int32_t & position2AStart, const int32_t & position1BEnd, const int32_t & position2BStart,
                  const std::string & align1, const std::string & align2, const int16_t * category,
                  Score & score, int8_t & couldMerge, int32_t & newScore,
                  std::string & align ) {
    couldMerge=0;
-   if( (position1BEnd+1) > position2BStart ){
+   if( (position1BEnd+1) > position2BStart ){ // have position overlap, could not be merged
        return;
    } else if (  (position1BEnd+1) < position2BStart ){
-        if( (position2BStart-position1BEnd) > seedScore1  ){
-            couldMerge=2;
+        if( (position2BStart-position1BEnd) > seedScore1  ){ // the finally is smaller than the larger larger seeds score, do not merger them
+            couldMerge=2;                                   // 2 means stop checking the current seed, to go next one
             return;
         }
-        if(  (position2BStart-position1BEnd) > seedScore2 ){
+        if(  (position2BStart-position1BEnd) > seedScore2 ){ // the finally is smaller than the larger larger seeds score, do not merger them
             return;
         }
         int16_t openGapPenalty, extendGapPenalty; // here using the smaller indel penalty
@@ -54,20 +56,22 @@ void megerSeedInsertion ( const int & seedScore1, const int & seedScore2, const 
             openGapPenalty=score.getOpenPenalty(*(category+position1AEnd));
             extendGapPenalty=score.getExtendPenalty(*(category+position1AEnd));
         }
-        if( openGapPenalty > seedScore1 || openGapPenalty > seedScore2 ){
+        if( openGapPenalty > seedScore1 || openGapPenalty > seedScore2 ){ // the finally is smaller than the larger larger seeds score, do not merger them
             return;
         }
         int32_t thisScore = seedScore1 + seedScore2 - openGapPenalty/*open gap penalty*/ - (position2BStart-(position1BEnd+1))*extendGapPenalty/*extend gap penalty*/;  // assume we have a seed 010-010 the first seed score is 2 and the second seed score is 2 and the merged seed score is 2 (0 means match, 1 means mis-match and - means indel)
         if ( thisScore >= seedScore1 && thisScore >= seedScore2 ){
             newScore = thisScore;
-            couldMerge = 1;
+            couldMerge = 1;  // this a good mergering
         }else{
             return;
         }
+        // if has not return yet, then generate align string
         align = align1 + std::string((position2BStart-(position1BEnd+1)), 'I') + align2;
     }
 }
 
+// merger neighbour seed by creat deletion records
 void megerSeedDeletion ( const int & seedScore1, const int & seedScore2, const int32_t & position1AEnd,
                  const int32_t & position2AStart, const int32_t & position1BEnd, const int32_t & position2BStart,
                  const std::string & align1, const std::string & align2, const int16_t * category,
@@ -133,16 +137,14 @@ void removeExtendSeedsDuplications_V_new(std::vector<Seed> & allExtendSeeds){
         }else{
             return a.positionAEnd < b.positionAEnd;
         }
-    });
-//    std::cout << "line 148" << std::endl;
+    }); // sort the array carefully
+
     int i, j;
     for ( i=0, j=0; i< allExtendSeeds.size(); ++i ){
-//        if( 0 == i% 1000 ){
-//            std::cout << "line 152 i " << i << std::endl;
-//        }
         if(  ( (allExtendSeeds[j].positionAEnd) == (allExtendSeeds[i].positionAEnd) ) && ( (allExtendSeeds[j].positionBEnd) == (allExtendSeeds[i].positionBEnd ))
              && allExtendSeeds[j].positionAStart <= allExtendSeeds[i].positionAStart && allExtendSeeds[j].positionBStart <= allExtendSeeds[i].positionBStart  ){
-
+            // if seed i equals to seed j or is a sub seed of seed j
+            // then delete it by skipping this index
         }else{
             ++j;
             if( i != j ){
@@ -156,14 +158,13 @@ void removeExtendSeedsDuplications_V_new(std::vector<Seed> & allExtendSeeds){
 
 
 //o2
+// this is longest path method also used in the PHG project
 void longestPath (std::vector<Seed> & allMergedSeeds, std::vector<Seed> & chain){
     std::sort(allMergedSeeds.begin(), allMergedSeeds.end(), [](Seed a, Seed b) {
         if(a.positionAStart == b.positionAStart){ return a.positionBStart < b.positionBStart; }else{return a.positionAStart < b.positionAStart;}
     });
-    std::cout << "line 161 begin to chain" << std::endl;
     int64_t maxSore = 0;
     int32_t bestEnd = -1;
-//    std::cout << allMergedSeeds[0].score << " " << allMergedSeeds[0].positionAStart << " " << allMergedSeeds[0].positionAEnd << " " << allMergedSeeds[0].positionBStart << " " << allMergedSeeds[0].positionBEnd << std::endl;
     std::vector<int64_t> scoreArray (allMergedSeeds.size()); // arrays of scores
     std::vector<int32_t> prev (allMergedSeeds.size());  // index of previous node in longest path
     scoreArray[0] = allMergedSeeds[0].score;
@@ -205,6 +206,8 @@ void longestPath (std::vector<Seed> & allMergedSeeds, std::vector<Seed> & chain)
     std::reverse(std::begin(chain), std::end(chain));
 }
 
+// this is longest path method also used in the PHG project
+// here we only perform this method on seeds located in a specific region
 void longestPath (std::vector<Seed> & allMergedSeeds, int32_t & startIndex, const int32_t & referenceStart,
         const int32_t & referenceEnd, const int32_t & queryStart, const int32_t & queryEnd, std::vector<Seed> & chain){
     int64_t maxSore = 0;
@@ -261,6 +264,7 @@ void longestPath (std::vector<Seed> & allMergedSeeds, int32_t & startIndex, cons
     }
 }
 
+// output alignment
 void outputAlignment( const char * a, const char * b, const int & startA, const int & startB, const std::string & align ){
     std::string aa;
     std::string ab;
@@ -284,6 +288,7 @@ void outputAlignment( const char * a, const char * b, const int & startA, const 
     }
     std::cout << aa << std::endl << ab << std::endl;
 }
+// output seeds which has no indel
 void outputAlignment( const char * a, const char * b, const int & startA, const int & startB, const int32_t & length ){
     std::string align="";
     for( int i =0; i<length; ++i ){
@@ -293,12 +298,11 @@ void outputAlignment( const char * a, const char * b, const int & startA, const 
 }
 
 
-
 void seq2seed ( const char * seqAChar, const char * seqBChar, const int32_t & lengthSeqA, const int32_t & lengthSeqB, const int16_t * category,
                 const int8_t & initialSeedLength, const int8_t & initialSeedsScoreThreadsHold,
                 const std::string & outputFile, int16_t miniseedLength, Score & score,
                 const int64_t & numberOfSeedsForChain){
-    miniseedLength--;
+    miniseedLength--; // minute the threshold by one, then we use > instead of >=
 
     int8_t initialSeedsScore;
     int32_t i, j;
@@ -307,29 +311,29 @@ void seq2seed ( const char * seqAChar, const char * seqBChar, const int32_t & le
     std::vector<Seed> allExtendSeeds;
 
     std::vector<NODE> allNodes;
-    CreateTree(seqAChar, lengthSeqA, initialSeedLength, allNodes);
+    CreateTree(seqAChar, lengthSeqA, initialSeedLength, allNodes); //index the reference genome sequence
     int8_t maximumMismatch=initialSeedLength-initialSeedsScoreThreadsHold;
     std::vector<int32_t > databasePositions;
     std::vector<int32_t > queryPositions;
     std::vector<int8_t > numMisMacth;
-    std::cout << "line 323" << std::endl;
+
+    // create seeds using suffix tree and extend those seeds
     for(  i=0; i<=(lengthSeqB-initialSeedLength); ++i) {
         databasePositions.clear();
         queryPositions.clear();
         numMisMacth.clear();
-        findSubString(allNodes, seqBChar+i, initialSeedLength, maximumMismatch, databasePositions, queryPositions, numMisMacth);
+        findSubString(allNodes, seqBChar+i, initialSeedLength, maximumMismatch, databasePositions, queryPositions, numMisMacth); // create seeds
         for ( j = 0; j < databasePositions.size(); ++j) {
             initialSeedsScore = initialSeedLength-numMisMacth[j];
-            forwardExtendSeed( seqAChar+databasePositions[j], seqBChar+i, lengthSeqA-databasePositions[j],
-                               lengthSeqB-i, initialSeedLength, initialSeedsScore, extendedSeedLength, extendSeedScore);
+            extendSeed( seqAChar+databasePositions[j], seqBChar+i, lengthSeqA-databasePositions[j],
+                               lengthSeqB-i, initialSeedLength, initialSeedsScore, extendedSeedLength, extendSeedScore); // extend seed
             Seed extendSeed={databasePositions[j], i, extendSeedScore, databasePositions[j]+extendedSeedLength-1,
                              i+extendedSeedLength-1, std::string(extendedSeedLength, 'M'), false};
-            allExtendSeeds.push_back(extendSeed);
+            allExtendSeeds.push_back(extendSeed);// put all seeds into a vector
         }
-        if( i>0 && allExtendSeeds.size()>1000 && 0 == i%50000 ){
-//            std::cout << "line 374 i " << i << std::endl;
+        if( i>0 && allExtendSeeds.size()>1000 && 0 == i%50000 ){ // remove duplication and overlap seed, in the media step
+            // since is the vector is too large this function should be very slow
             removeExtendSeedsDuplications_V_new(allExtendSeeds);
-//            std::cout << "line 376 i " << i << std::endl;
         }
     }
 
@@ -347,7 +351,7 @@ void seq2seed ( const char * seqAChar, const char * seqBChar, const int32_t & le
         allExtendSeeds[i].score=newScore;
     }
     time_t my_time = time(NULL); printf("%s", ctime(&my_time));
-    std::cout << "update seed score according to their category " << allExtendSeeds.size() << std::endl;
+    std::cout << "update seed score according to their category done" << allExtendSeeds.size() << std::endl;
 
     // the following code could be dangerous, should be really careful
     // since there are INDELs, so should not remove duplication by comparing the start and end position without consider the alignment
@@ -356,8 +360,6 @@ void seq2seed ( const char * seqAChar, const char * seqBChar, const int32_t & le
     std::sort(allExtendSeeds.begin(), allExtendSeeds.end(), [](Seed a, Seed b) {
         if(a.positionAStart == b.positionAStart){ return a.positionBStart < b.positionBStart; }else{return a.positionAStart < b.positionAStart;}
     });
-    my_time = time(NULL); printf("%s", ctime(&my_time));
-    std::cout << "extend transformed to megered seeds " << allExtendSeeds.size() << std::endl;
 
     // prepare special data structure for speeding up purpose
     std::vector<std::vector<Seed *>> referencePositionAsIndex(lengthSeqA+1); // plus for end based entry
@@ -395,6 +397,7 @@ void seq2seed ( const char * seqAChar, const char * seqBChar, const int32_t & le
             }
         }
     }
+    //delete those seeds have been already merged begin
     referencePositionAsIndex.clear();
     for( i=j=0; i<allExtendSeeds.size(); ++i ){
         if( !allExtendSeeds[i].everUsed ){ // should be kept
@@ -406,7 +409,9 @@ void seq2seed ( const char * seqAChar, const char * seqBChar, const int32_t & le
     }
     ++j;
     allExtendSeeds.resize(j);
-    std::cout << "referencePositionAsIndex shrink allMergedSeeds " << allExtendSeeds.size() << std::endl;
+    //delete those seeds have been already merged bend
+
+    std::cout << "referencePositionAsIndex shrink allMergedSeeds done " << allExtendSeeds.size() << std::endl;
     allMergedSeedsSize=allExtendSeeds.size();
     std::vector<std::vector<Seed *>> queryPositionAsIndex(lengthSeqB+1);
     for( i=0; i<allMergedSeedsSize; ++i ){
@@ -423,7 +428,7 @@ void seq2seed ( const char * seqAChar, const char * seqBChar, const int32_t & le
                                           queryPositionAsIndex[allExtendSeeds[i].positionBEnd+1][j]->positionBStart,
                                           allExtendSeeds[i].align, queryPositionAsIndex[allExtendSeeds[i].positionBEnd+1][j]->align, category,
                                           score, couldMerge, megerScore, align);
-                        if( 2 == couldMerge ){
+                        if( 2 == couldMerge ){ // since the vector has been well sorted, then return 2, that suggest seed i could not be merged and then go to check i+1
                             break;
                         } else if (couldMerge == 1) {
                             allExtendSeeds[i].positionAEnd = queryPositionAsIndex[allExtendSeeds[i].positionBEnd +1][j]->positionAEnd;
@@ -438,8 +443,8 @@ void seq2seed ( const char * seqAChar, const char * seqBChar, const int32_t & le
             }
         }
     }
-    queryPositionAsIndex.clear();
-    std::cout << "begin to shrink allMergedSeeds " << allExtendSeeds.size() << std::endl;
+    queryPositionAsIndex.clear(); // this vector is not necessary anymore, clear it and save memory
+    //delete those seeds have been already merged and also those seed with too short length begin
     for( i=j=0; i<allExtendSeeds.size(); ++i ){
         if( !allExtendSeeds[i].everUsed && (allExtendSeeds[i].align.size())>=miniseedLength  ){
             if( i != j ){
@@ -449,6 +454,7 @@ void seq2seed ( const char * seqAChar, const char * seqBChar, const int32_t & le
         }
     }
     ++j;
+    //delete those seeds have been already merged and also those seed with too short length begin
     allExtendSeeds.resize(j);
     my_time = time(NULL); printf("%s", ctime(&my_time));
 
@@ -458,6 +464,10 @@ void seq2seed ( const char * seqAChar, const char * seqBChar, const int32_t & le
 
     std::vector<Seed> chain;
     if( numberOfSeedsForChain>0 && allExtendSeeds.size() > numberOfSeedsForChain ){
+        // if the we have too many seeds the longest path method would be very slow,
+        // we could pick up a certain number of them with high score
+        // and perform longest path method on this subset
+        // and then run longest path method to fill the gap regions
         std::sort(allExtendSeeds.begin(), allExtendSeeds.end(), [](Seed a, Seed b) {
             return  a.score > b.score;
         });
@@ -466,6 +476,9 @@ void seq2seed ( const char * seqAChar, const char * seqBChar, const int32_t & le
             subMergedSeedVector[i]=allExtendSeeds[i];
         }
         longestPath ( subMergedSeedVector, chain );
+        // longest path on those high score seeds done
+
+        // run longest path on each interval region begin
         std::sort(allExtendSeeds.begin(), allExtendSeeds.end(), [](Seed a, Seed b) {
             if(a.positionAStart == b.positionAStart){ return a.positionBStart < b.positionBStart; }else{return a.positionAStart < b.positionAStart;}
         });
@@ -477,8 +490,9 @@ void seq2seed ( const char * seqAChar, const char * seqBChar, const int32_t & le
         int32_t queryEnd;
 
         size_t chainSize = chain.size();
+        // since new seed will be inserted to the tail of chain and the chain size will change
+        // so setup a new variable to record the size of the current chain
         for( i=0; i<chainSize; ++i  ){
-            //std::cout << " line 462 i " << i << " of chainSize " << chainSize << std::endl;
             referenceEnd=chain[i].positionAStart;
             queryEnd=chain[i].positionBStart;
             longestPath (allExtendSeeds, startIndex, referenceStart, referenceEnd, queryStart, queryEnd, chain);
@@ -493,38 +507,40 @@ void seq2seed ( const char * seqAChar, const char * seqBChar, const int32_t & le
         std::sort(chain.begin(), chain.end(), [](Seed a, Seed b) {
             if(a.positionAStart == b.positionAStart){ return a.positionBStart < b.positionBStart; }else{return a.positionAStart < b.positionAStart;}
         });
-    }else{
+        // run longest path on each interval region end
+    }else{ // if the vector size is not very large, run longest path method directly
         longestPath ( allExtendSeeds, chain );
     }
-
-    allExtendSeeds.clear();
+    allExtendSeeds.clear(); // save RAM
     my_time = time(NULL); printf("%s", ctime(&my_time));
     std::cout << "final chain " << chain.size() << std::endl;
 
+    //fill the seeds interval regions using weighted needleman wunsch method begin
     int32_t AStart = 0;
     int32_t BStart = 0;
-
     std::stringstream alignStream;
     std::stack<char> A;
     for( i=0; i<chain.size(); ++i ){
         zdp(seqAChar+AStart, seqBChar+BStart, chain[i].positionAStart-AStart, chain[i].positionBStart-BStart, category+AStart, A, score);
+        // run the weighted needleman wunsch method
         while (!A.empty()) {
             alignStream << A.top();
-            //std::cout << A.top();
             A.pop();
         }
-        //std::cout << std::endl;
         alignStream << chain[i].align;
         AStart = chain[i].positionAEnd+1;
         BStart = chain[i].positionBEnd+1;
     }
     std::cout << "after chain" << std::endl;
-    zdp(seqAChar+AStart, seqBChar+BStart, lengthSeqA-AStart, lengthSeqB-BStart, category+AStart, A, score);
+    zdp(seqAChar+AStart, seqBChar+BStart, lengthSeqA-AStart, lengthSeqB-BStart, category+AStart, A, score); // here is the region downstream of the last chained seed
     while (!A.empty()) {
         alignStream << A.top();
         A.pop();
     }
+    //fill the seeds interval regions using weighted needleman wunsch method end
 
+
+    // print out the result begin
     std::string thisAlign = alignStream.str();
     std::string aa;
     std::string ab;
@@ -575,8 +591,8 @@ void seq2seed ( const char * seqAChar, const char * seqBChar, const int32_t & le
         ofile << cc.substr(pos, linewidth) << std::endl << std::endl << std::endl << std::endl;
         pos += linewidth;
     }
+    // print out the result end
 
     my_time = time(NULL); printf("%s", ctime(&my_time));
     std::cout << std::endl;
-
 }

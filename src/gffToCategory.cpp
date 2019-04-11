@@ -4,7 +4,7 @@
 
 #include "gffToCategory.h"
 
-
+// split a string by specific seperator, and generate a vector
 void split(const std::string &s, char& delim, std::vector<std::string> &elems) {
     std::stringstream ss(s);
     std::string item;
@@ -15,11 +15,15 @@ void split(const std::string &s, char& delim, std::vector<std::string> &elems) {
     }
 }
 
+// and gff records
 struct element{
     int32_t start;
     int32_t end;
 };
 
+
+
+// for those duplication gff records and neighbour records with position over, try to merge them and generate a list of unique and non-overlapping records
 void removeDuplications( std::map<std::string, std::vector<element>> & elements0, std::map<std::string, std::vector<element> > & elements ){
     for( std::map<std::string, std::vector<element>>::iterator it = elements0.begin(); it != elements0.end(); ++it ){
         elements[it->first] = std::vector<element>();
@@ -46,17 +50,21 @@ void removeDuplications( std::map<std::string, std::vector<element>> & elements0
     }
 }
 
-void updateWeight( std::map<std::string, std::vector<element> > & elements, std::map<std::string, int16_t *> & categories, const int16_t & score){
+// update the weigth vector (categories)
+// weigths is a vector of element and the key is the chromosome
+// weigth is the weight of this category
+void updateWeight( std::map<std::string, std::vector<element> > & elements, std::map<std::string, int16_t *> & weigths, const int16_t & weigth){
     int i, j;
     for( std::map<std::string, std::vector<element>>::iterator it = elements.begin(); it != elements.end(); ++it ){
         for( i=0; i<it->second.size(); ++i ){
             for( j=it->second[i].start; j<=it->second[i].end; ++j ) {
-                categories[it->first][j]=score;
+                weigths[it->first][j]=weigth;
             }
         }
     }
 }
 
+//read gff file and write the weight vector into a file
 void readGffFileWithEveryThing (const std::string& filePath, std::map<std::string, int32_t> & chrSize, const std::string & outputFile){
     std::map<std::string, int16_t *> categories;
     readGffFileWithEveryThing (filePath,  chrSize, categories);
@@ -84,6 +92,7 @@ void readGffFileWithEveryThing (const std::string& filePath, std::map<std::strin
 
 
 
+// read gff file and generate a weight vector
 void readGffFileWithEveryThing (const std::string& filePath, std::map<std::string, int32_t> & chrSize, std::map<std::string, int16_t *> & categories){
 
     std::map<std::string, std::vector <element>> introns0; // gene, transcript protein, intron

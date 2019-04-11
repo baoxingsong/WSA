@@ -1,6 +1,27 @@
-//
-// Created by Baoxing Song on 2019-04-04.
-//
+/*
+ * =====================================================================================
+ *
+ *       Filename:  Score.h
+ *
+ *    Description:
+ *
+ *        Version:  1.0
+ *        Created:  04/04/2019 19:38:26
+ *       Revision:  none
+ *       Compiler:  gcc
+ *
+ *         Author:  Baoxing Song, songbaoxing168@163.com
+ *
+ * =====================================================================================
+ */
+
+/*************************************************************************
+
+
+Reading the score from configure and provide score query functions
+
+ ************************************************************************/
+
 
 #ifndef WSA_SCORE_H
 #define WSA_SCORE_H
@@ -18,7 +39,6 @@
 
 class Score {
     private:
-        //std::map<int16_t, int16_t**> scoreMatrix;
         std::map<int16_t, int16_t> matchScores;
         std::map<int16_t, int16_t> mismatchScores;
         std::map<int16_t, int16_t> openPenalties;

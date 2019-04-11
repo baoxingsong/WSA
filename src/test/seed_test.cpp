@@ -20,7 +20,6 @@ TEST(seed, c1){
 //    std::string seqB="ATGGCGAATCCCAGAGGGAGAGGAA";
 
     /*currently this code should work for chromosome with length ~2g and does not work for longer one
-     *
      * */
 
     std::map<std::string, std::string> b73;

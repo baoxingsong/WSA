@@ -4,6 +4,8 @@
 
 #include "fasta.h"
 
+
+//this is a fasta file function adopted from the minimap2 source code
 void charByCharRead(std::istream& stream, std::map<std::string, std::string> & seqs ) {  // not using, could be deleted
 //    if (!stream.good()) throw EggRuntimeError("cannot import fasta data: invalid stream");
 
@@ -45,6 +47,7 @@ void charByCharRead(std::istream& stream, std::map<std::string, std::string> & s
 }
 
 
+// read the fasta file. the key reference if the sequence entry id and the value is a sequence
 void readFastaFile( const std::string& filePath, std::map<std::string, std::string>& sequences ){
     std::ifstream infile(filePath);
     if( ! infile.good()){
@@ -82,6 +85,8 @@ void readFastaFile( const std::string& filePath, std::map<std::string, std::stri
 }
 
 
+// reading the weight vector from a fasta like plain file
+// since both the writing and the reading of weight vector file is vary slow, we are not using it at this moment
 void charByCharCategoryRead( const std::string& filePath, std::map<std::string, std::string> & seqs, std::map<std::string, int16_t * > & weight ) {
     for( std::map<std::string, std::string>::iterator it = seqs.begin(); it!=seqs.end(); ++it ){
         weight[it->first] = new int16_t[it->second.size()];
